@@ -1,6 +1,7 @@
 package com.java.xc.domain;
 
 import java.io.Serializable;
+import java.text.DecimalFormat;
 
 public class Menu implements Serializable{
 	private int meid;
@@ -75,7 +76,7 @@ public class Menu implements Serializable{
 	@Override
 	public String toString() {
 		// TODO Auto-generated method stub
-		return meid+"\t"+mename+"\t"+meprice;
+		return meid+"\t\t"+mename+"\t\t"+Double.parseDouble(new DecimalFormat("#.##").format(meprice*mediscount));
 	}
 
 }

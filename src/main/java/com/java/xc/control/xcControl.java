@@ -1,14 +1,19 @@
 package com.java.xc.control;
 
+import java.io.File;
 import java.net.Socket;
+import java.text.DecimalFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 import java.util.UUID;
 
@@ -19,6 +24,7 @@ import com.java.xc.domain.Client;
 import com.java.xc.domain.Manager;
 import com.java.xc.domain.Menu;
 import com.java.xc.domain.ShopCar;
+import com.java.xc.domain.Staff;
 import com.java.xc.util.Email;
 import com.java.xc.util.UserInput;
 import com.java.xc.view.xcView;
@@ -37,6 +43,7 @@ public class xcControl {
 	private totalBiz tBiz;
 
 	public xcControl() {
+		
 		view = new xcView();
 		ui = new UserInput();
 		e = new Email();
@@ -46,6 +53,7 @@ public class xcControl {
 	public void start() {
 		int account;
 		Client c = null;
+		Staff s=null;
 		while (true) {
 			view.Mainmenu();
 			int select = ui.getInt("请做出您的选择:");
@@ -81,13 +89,19 @@ public class xcControl {
 									if (card != null) {
 										c.setCard(card);
 									}
-								}else if(select3==4){
+								} else if (select3 == 4) {
 									this.relieveCard(c);
-								}else if(select3==5){
+								} else if (select3 == 5) {
 									this.selectBa(c);
+								}else if (select3 == 6) {
+									this.selectInt(c);
+								}else if (select3 == 7) {
+									
 								}
 
-							} else if (select2 == 6) {
+							}else if (select2 == 6) {
+								this.updatepw(c);
+							} else if (select2 == 7) {
 								break;
 							}
 						}
@@ -102,32 +116,61 @@ public class xcControl {
 							if (select3 == 1) {
 								this.addMenu();
 							} else if (select3 == 2) {
-								this.dolose(c);
+								this.Mdolose();
 							} else if (select3 == 3) {
 								this.setDis();
 							} else if (select3 == 4) {
 								this.exportSales();
-							} else if (select3 == 5) {
+							}else if (select3 == 5) {
+								this.findTall();
+							}else if (select3 == 6) {
+								this.delectSales();
+							}else if (select3 == 7) {
+								this.insertY();
+							}else if (select3 == 8) {
+								this.deletteY();
+							}else if (select3 == 9) {
 								break;
 							}
 						}
 					}
 
+				}else if (a.equals("300")) {
+					s = this.slogin(account);
+					if(s!=null){
+						while(true){
+					view.Staffmenu();
+					int select4 = ui.getInt("请选择:");
+					if(select4==1){
+					this.staffmenu();
+					}else if(select4==2){
+						String str = this.updateSpw(s);
+						s.setSpassword(str);
+						
+					}else if(select4==3){
+						this.deleteOf();
+					}else if(select4==4){
+						break;
+					}else{
+						System.out.println("输入有误");
+					}
+						}
+					}
+				}else{
+					System.out.println("输入错误");
 				}
 
 			} else if (select == 2) {
 				this.register();
 			} else if (select == 3) {
-				this.updatepw();
+				this.forgetpw(c);
 			} else {
 				System.out.println("指令错误");
 			}
 		}
 	}
 
-	
 
-	
 
 	/**
 	 * @Title: login
@@ -151,10 +194,18 @@ public class xcControl {
 	 */
 	private Client clogin(int account) {
 		Client c = tBiz.selectBycac(account);
+		String type = null;
 		if (c != null) {
+			if(c.getCard().getCatype().equals("1")){
+				type="vip用户";
+			}else if(c.getCard().getCatype().equals("2")){
+				type="超级vip用户";
+			}else{
+				type="普通用户";
+			}
 			String cpassword = ui.getString("请输入密码:");
 			if (cpassword.equals(c.getCpassword())) {
-				System.out.println("登陆成功，欢迎" + c.getCname());
+				System.out.println("登陆成功，欢迎" +type+c.getCname());
 				return c;
 			} else {
 				System.out.println("密码错误");
@@ -166,13 +217,13 @@ public class xcControl {
 		}
 	}
 
-	/**   
-	 * @Title: mlogin   
-	 * @Description: 经理登录  
+	/**
+	 * @Title: mlogin
+	 * @Description: 经理登录
 	 * @param: @param account
-	 * @param: @return      
-	 * @return: Manager      
-	 * @throws   
+	 * @param: @return
+	 * @return: Manager
+	 * @throws
 	 */
 	private Manager mlogin(int account) {
 		Manager m = tBiz.selectBymac(account);
@@ -250,7 +301,13 @@ public class xcControl {
 			email = ui.getString("请输入您的QQ邮箱(xxx@qq.com):");
 			boolean flag = this.emailflag(email);
 			if (flag) {
-				break;
+				Client c = tBiz.selectByemail(email);
+				if (c == null) {
+					break;
+				} else {
+					System.out.println("您输入的邮箱已注册");
+				}
+
 			} else {
 				System.out.println("您输入的邮箱有误，请重新输入。");
 			}
@@ -261,20 +318,23 @@ public class xcControl {
 
 	}
 
-	/**
-	 * @Title: updatepw
-	 * @Description: 忘记账号或密码
-	 * @param:
-	 * @return: void
-	 * @throws
+	
+	
+	/**   
+	 * @Title: forgetpw   
+	 * @Description: 忘记账号或密码    
+	 * @param: @param c      
+	 * @return: void      
+	 * @throws   
 	 */
-	private void updatepw() {
+	private void forgetpw(Client cl) {
 		int number = (int) ((Math.random() * 9 + 1) * 1000);
 		String num = number + "";
 		String email;
 		Client c;
 		while (true) {
 			email = ui.getString("请输入您的注册邮箱:");
+			if(email.equals(cl.getCemail())){
 			boolean flag = this.emailflag(email);
 			if (flag) {
 				c = tBiz.selectByemail(email);
@@ -286,6 +346,9 @@ public class xcControl {
 				}
 			} else {
 				System.out.println("邮箱格式错误");
+			}
+			}else{
+				System.out.println("您输入的邮箱不正确");
 			}
 		}
 		while (true) {
@@ -300,6 +363,7 @@ public class xcControl {
 				System.out.println("验证码错误请重新输入");
 			}
 		}
+		
 	}
 
 	/**
@@ -318,6 +382,198 @@ public class xcControl {
 			return false;
 		}
 	}
+	
+
+	/**   
+	 * @Title: updatepw   
+	 * @Description: 修改密码  
+	 * @param:       
+	 * @return: void      
+	 * @throws   
+	 */
+	private void updatepw(Client c) {
+		String oldpw = ui.getString("请输入您的旧密码:");
+		String newpw;
+		if(c.getCpassword().equals(oldpw)){
+			while(true){
+			 newpw= ui.getString("请输入新密码");
+			String newpw2 = ui.getString("再次输入密码:");
+			if(newpw.equals(newpw2)){
+				break;
+			}else{
+				System.out.println("两次输入不一致");
+			}
+			}
+			String s = tBiz.updatePass(c.getCaccount(), newpw);
+			System.out.println(s);
+		}else{
+			System.out.println("您输入的密码不正确");
+		}
+		
+	}
+	
+	
+
+	/**   
+	 * @Title: deletteY   
+	 * @Description: 删除员工   
+	 * @param:       
+	 * @return: void      
+	 * @throws   
+	 */
+	private void deletteY() {
+		int saccount = ui.getInt("请输入要删除的员工编号:");
+		Staff s = tBiz.selectBysac(saccount);
+		if(s==null){
+			System.out.println("您输入的员工不存在");
+		}else{
+			boolean f = tBiz.deleteSta(saccount);
+			if(f){
+				System.out.println("删除成功");
+			}else{
+				System.out.println("删除失败");
+			}
+		}
+		
+	}
+
+	/**   
+	 * @Title: updateSpw   
+	 * @Description: 员工修改密码   
+	 * @param: @param s
+	 * @param: @return      
+	 * @return: String      
+	 * @throws   
+	 */
+	private String updateSpw(Staff s) {
+		String oldpw = ui.getString("请输入您的旧密码:");
+		String newpw;
+		if(oldpw.equals(s.getSpassword())){
+			while(true){
+			newpw = ui.getString("请输入新密码:");
+			String newpw2 = ui.getString("请再次输入密码:");
+			if(newpw.equals(newpw2)){
+				break;
+			}else{
+				System.out.println("两次密码不一致，重新输入");
+			}
+			}
+			String str = tBiz.updatespw(s.getSaccount(), newpw);
+			System.out.println(str);
+			return newpw;
+		}else{
+			System.out.println("旧密码错误");
+			return s.getSpassword();
+		}
+		
+		
+	}
+
+	/**   
+	 * @Title: slogin   
+	 * @Description: 员工登录  
+	 * @param:       
+	 * @return: void      
+	 * @throws   
+	 */
+	private Staff slogin(int saccount) {
+		Staff s = tBiz.selectBysac(saccount);
+		if(s==null){
+			System.out.println("您输入的编号不存在");
+			return null;
+		}
+		String spassword = ui.getString("请输入您的密码:");
+		if(spassword.equals(s.getSpassword())){
+			System.out.println("登陆成功，亲爱的员工"+s.getSname()+"，你好");
+			return s;
+		}else{
+			System.out.println("密码错误");
+			return null;
+		}
+		
+		
+	}
+
+	/**   
+	 * @Title: staffmenu   
+	 * @Description: 订单接收   
+	 * @param:       
+	 * @return: void      
+	 * @throws   
+	 */
+	private void staffmenu() {
+		List<String> list = tBiz.selectOFid();
+		System.out.println("订单编号\t下单时间");
+		for (String s : list) {
+			String[] arr = s.split("#");
+			System.out.println(arr[0]+"\t"+arr[1]);
+		}
+		String ofid = ui.getString("请输入您要查找的订单（输入z退出）:");
+		if("z".equals(ofid)){
+			return ;
+		}
+		Map<String, Integer> map = tBiz.selectByOfid(ofid);
+		if(map==null){
+			System.out.println("您输入的订单号有误");
+		}else{
+			System.out.println("菜品名\t下单数量");
+			Set<String> keySet = map.keySet();
+			for (String str : keySet) {
+				System.out.println(str+"\t"+map.get(str));
+			}
+			
+		}
+		
+	}
+	
+	/**   
+	 * @Title: deleteOf   
+	 * @Description: 删除订单  
+	 * @param:       
+	 * @return: void      
+	 * @throws   
+	 */
+	private void deleteOf() {
+		String ofid = ui.getString("请输入要删除的订单编号:");
+		Map<String, Integer> map = tBiz.selectByOfid(ofid);
+		if(map==null){
+			System.out.println("订单不存在");
+		}else{
+			boolean flag = tBiz.deleteByofid(ofid);
+			if(flag){
+				System.out.println("删除成功");
+			}else{
+				System.out.println("删除失败");
+			}
+		}
+		
+	}
+
+	/**   
+	 * @Title: insertY   
+	 * @Description: 添加员工   
+	 * @param:       
+	 * @return: void      
+	 * @throws   
+	 */
+	private void insertY() {
+		System.out.println("开始录入员工信息:");
+		String sname = ui.getString("请输入员工姓名:");
+		String sposition = ui.getString("请输入员工职位:");
+		String semail;
+		while(true){
+		 semail= ui.getString("请输入员工qq邮箱:");
+		boolean flag = this.emailflag(semail);
+		if(flag){
+			break;
+		}else{
+			System.out.println("邮箱格式不正确");
+		}
+		}
+		int saccount = tBiz.insertSta(new Staff(sname,sposition,semail));
+		System.out.println("添加成功，员工编号为"+saccount+"，初始密码为123456");
+	}
+
 
 	/**
 	 * @Title: shoeMenu
@@ -327,6 +583,7 @@ public class xcControl {
 	 * @throws
 	 */
 	public void showMenu() {
+		List<Menu> cheapM = new ArrayList<Menu>();
 		List<Menu> coldM = new ArrayList<Menu>();
 		List<Menu> hotM = new ArrayList<Menu>();
 		List<Menu> mainM = new ArrayList<Menu>();
@@ -344,23 +601,42 @@ public class xcControl {
 			} else {
 				continue;
 			}
+			if (m.getMediscount() < 1) {
+				cheapM.add(m);
+			}
 		}
-		System.out.println("-----凉菜-------");
+		System.out.println("----------------菜单----------------");
+		System.out.println(" ");
+		int meid = tBiz.selectIDSalT();
+		if(meid!=0){
+			System.out.println("              |*本月热销*|");
+			Menu m = tBiz.selectBymeid(meid);
+			System.out.println(m);
+		}
+		System.out.println(" ");
+		if (cheapM != null) {
+			System.out.println("              |*今日特价 *|");
+			for (Menu cheap : cheapM) {
+				System.out.println(cheap);
+			}
+		}
+		System.out.println(" ");
+		System.out.println("                |凉菜 |");
 		for (Menu cold : coldM) {
 			System.out.println(cold);
 		}
-
-		System.out.println("-----热菜-------");
+		System.out.println(" ");
+		System.out.println("                |热菜 |");
 		for (Menu hot : hotM) {
 			System.out.println(hot);
 		}
-
-		System.out.println("-----主食-------");
+		System.out.println(" ");
+		System.out.println("                |主食 |");
 		for (Menu main : mainM) {
 			System.out.println(main);
 		}
-
-		System.out.println("-----汤-------");
+		System.out.println(" ");
+		System.out.println("                | 汤  |");
 		for (Menu soup : soupM) {
 			System.out.println(soup);
 		}
@@ -374,16 +650,33 @@ public class xcControl {
 	 * @throws
 	 */
 	private void pickMenu(Client c) {
-		if(tBiz.selectState(c.getCard().getCaid()).equals("1")){
+		if (tBiz.selectState(c.getCard().getCaid()).equals("1")) {
 			System.out.println("您的卡已挂失不能点菜");
-			return ;
+			return;
+		}
+		boolean f = this.birthD(c);
+		String sex = null;
+		if (c.getCsex().equals("男")) {
+			sex = "先生";
+		} else if (c.getCsex().equals("女")) {
+			sex = "女士";
+		}
+		if (f) {
+			System.out.println("-----------------------------------------");
+			System.out.println("|尊敬的" + c.getCname() + sex
+					+ ",生日快乐,今天您在本店消费享受九五折待遇哦！|");
+			System.out.println("-----------------------------------------");
+			System.out.println(" ");
 		}
 		this.showMenu();
 		Map<String, Integer> map = new HashMap<String, Integer>();
 		Set<String> key = map.keySet();
 		boolean flag = false;
 
-		String menulist = ui.getString("请输入您要点的菜编号(以,隔开):");
+		String menulist = ui.getString("请输入您要点的菜编号(以,隔开。取消点菜输入z):");
+		if(menulist.equals("z")){
+			return ;
+		}
 		String[] arr = menulist.split(",");
 		for (String s : arr) {
 			for (String s2 : key) {
@@ -420,8 +713,10 @@ public class xcControl {
 		List<ShopCar> list = tBiz.selectMBycac(c.getCaccount());
 		System.out.println("您添加的菜品如下:");
 		for (ShopCar sc : list) {
-			double price = (sc.getM().getMeprice() * sc.getM().getMediscount())
-					* sc.getMenum();
+			double price = Double
+					.parseDouble(new DecimalFormat("#.##").format((sc.getM()
+							.getMeprice() * sc.getM().getMediscount())
+							* sc.getMenum()));
 			System.out.println(sc.getM().getMeid() + " "
 					+ sc.getM().getMename() + " " + sc.getMenum() + " " + price
 					+ "元");
@@ -457,6 +752,27 @@ public class xcControl {
 	}
 
 	/**
+	 * @Title: birthD
+	 * @Description: 判断今天是否是生日
+	 * @param: @param c
+	 * @param: @return
+	 * @return: boolean
+	 * @throws
+	 */
+	public boolean birthD(Client c) {
+		Date d = new Date();
+		String date = (d.getMonth() + 1) + "-" + d.getDate();
+		String bir = (c.getCbirth().getMonth() + 1) + "-"
+				+ c.getCbirth().getDate();
+		if (date.equals(bir)) {
+			return true;
+		} else {
+			return false;
+		}
+
+	}
+
+	/**
 	 * @Title: pay
 	 * @Description: 结账
 	 * @param: @param c
@@ -464,66 +780,85 @@ public class xcControl {
 	 * @throws
 	 */
 	private void pay(Client c) {
+		// boolean flag=false;
 		double price = tBiz.addMoney(c.getCaccount());
 		Card card = tBiz.selectBycid(c.getCard().getCaid());
-		if (card.getCabalance() > price) {
-			System.out.println("您的消费金额为" + price + "元");
-			String s = ui.getString("是否确认支付？(y/n)");
-			if (s.equals("y")) {
+		boolean flag = this.birthD(c);
+		if (flag) {
+			price = Double.parseDouble(new DecimalFormat("#.##")
+					.format(price * 0.95));
+			System.out.println("今天是您的生日本店为您的消费打九五折");
+
+		}
+		System.out.println("您的消费金额为" + price + "元");
+		String s = ui.getString("是否确认支付？(y/n)");
+		if (s.equals("y")) {
+			if (card.getCabalance() > price) {
 				double p = tBiz.updateBa(c.getCard().getCaid(), price);
-				System.out.println("支付成功，您的卡上余额为" + p);
+				double in = tBiz.updateInt(c.getCard().getCaid(), price);
+				System.out.println("支付成功，您的卡上余额为" + p+"元，本次积分为"+price+",卡上积分为"+in);
+				UUID uid = UUID.randomUUID();
+				String[] arr = uid.toString().split("-");
 				String i = ui.getString("是否打印小票(y/n)?");
 				if ("y".equals(i)) {
-					this.printTap(c);
+					this.printTap(c, price,in,arr[2]);
 				}
 				Map<ShopCar, Double> map = new HashMap<ShopCar, Double>();
 				List<ShopCar> list = tBiz.selectMBycac(c.getCaccount());
 				for (ShopCar sc : list) {
 					map.put(sc, this.addMenuMon(sc.getM(), sc.getMenum(), c));
+					tBiz.insertOrderf(arr[2],sc);
 					String str = tBiz.deleteMenuS(sc.getM().getMeid(),
 							sc.getMenum(), c.getCaccount());
 				}
 				boolean a = tBiz.insertSales(map);// 添加到月销售账单
-
 			} else {
-				System.out.println("支付取消");
+				System.out.println("您的卡上余额不足");
 			}
 		} else {
-			System.out.println("您的卡上余额不足");
+			System.out.println("支付取消");
 		}
+
 	}
 
-	/**   
-	 * @Title: printTap   
-	 * @Description: 打印小票  
-	 * @param: @param c      
-	 * @return: void      
-	 * @throws   
+	/**
+	 * @Title: printTap
+	 * @Description: 打印小票
+	 * @param: @param c
+	 * @return: void
+	 * @throws
 	 */
-	public void printTap(Client c) {
+	public void printTap(Client c, double price,double in,String ofid) {
 		List<ShopCar> list = tBiz.selectMBycac(c.getCaccount());
-
+ 
+		System.out.println(" ");
 		System.out.println("   想吃自助点餐系统           ");
 		System.out.println("------------------");
 		System.out.println("cc号:" + c.getCaccount());
-		UUID uid = UUID.randomUUID();
-		String[] arr = uid.toString().split("-");
-		System.out.println("订单编号:" + arr[2]);
+		System.out.println("卡号:"+c.getCard().getCaid());
+		System.out.println("卡上积分为:"+in);
+		
+		System.out.println("订单编号:" + ofid);
+		Date d=new Date();
+		SimpleDateFormat sdf=new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+		String date = sdf.format(d);
+		System.out.println("下单时间:"+date);
 		System.out.println("------------------");
+		System.out.println("菜名\t数量\t价格");
 		for (ShopCar s : list) {
-			System.out
-					.println(s.getM().getMename()
-							+ "\t"
-							+ s.getMenum()
-							+ "\t"
-							+ (s.getM().getMeprice() *s.getMenum()* s.getM().getMediscount()));
+			System.out.println(s.getM().getMename()
+					+ "\t"
+					+ s.getMenum()
+					+ "\t"
+					+ (s.getM().getMeprice() * s.getMenum() * s.getM()
+							.getMediscount()));
 
 		}
 		System.out.println("-------------------");
 		double money = tBiz.addMoney(c.getCaccount());
 		double discount = tBiz.selectDis(c.getCaccount());
-		System.out.println("应付金额:"+(money/discount));
-		System.out.println("实付金额:"+money);
+		System.out.println("应付金额:" + Double.parseDouble(new DecimalFormat("#.##").format(money / discount)));
+		System.out.println("实付金额:" + price);
 	}
 
 	/**
@@ -539,7 +874,7 @@ public class xcControl {
 		double discount = tBiz.selectDis(c.getCaccount());
 		double price = (m.getMeprice() * m.getMediscount() - m.getMepuprice())
 				* num * discount;
-		return price;
+		return Double.parseDouble(new DecimalFormat("#.##").format(price));
 
 	}
 
@@ -551,17 +886,34 @@ public class xcControl {
 	 * @throws
 	 */
 	private void cardmoney(Client c) {
-
-		double price = ui.getDouble("请输入充值金额：");
 		String state = tBiz.selectState(c.getCard().getCaid());
 		if (state.equals("1")) {
 			System.out.println("您的卡已挂失不可充值");
 			return;
 		}
-		double p = tBiz.cardmoney(c.getCard().getCaid(), price);
-		System.out.println("您的卡上余额为" + p);
-
+		view.cardAC();
+		double price = ui.getDouble("请输入充值金额：");
+		double endprice = price;
+		if(price>=200){
+			endprice=price+50;
+			System.out.println("您充值的金额大于200元，将赠送您50元");
+		}
+		double p = tBiz.cardmoney(c.getCard().getCaid(), endprice);
+		System.out.println("充值成功，您的卡上余额为" + p);
+		if(price>=300&&price<600){
+			boolean flag = tBiz.updateType(c.getCard().getCaid(), "1");
+			if(flag){
+				System.out.println("您的卡已升级为vip，折扣将成为95折");
+			}
+		}else if(price>=600){
+			boolean flag2 = tBiz.updateType(c.getCard().getCaid(), "2");
+			if(flag2){
+				System.out.println("您的卡已升级为svip，折扣将成为9折");
+			}
+		}
+	
 	}
+		
 
 	/**
 	 * @Title: dolose
@@ -571,14 +923,14 @@ public class xcControl {
 	 * @throws
 	 */
 	private void dolose(Client c) {
-		int cid ;
-		while(true){
-		cid= ui.getInt("请输入您的卡号:");
-		if(c.getCard().getCaid()!=cid){
-			System.out.println("您输入的卡号不正确");
-		}else{
-			break;
-		}
+		int cid;
+		while (true) {
+			cid = ui.getInt("请输入您的卡号:");
+			if (c.getCard().getCaid() != cid) {
+				System.out.println("您输入的卡号不正确");
+			} else {
+				break;
+			}
 		}
 		String state = tBiz.selectState(cid);
 		if (state.equals("1")) {
@@ -590,21 +942,59 @@ public class xcControl {
 
 	}
 	
+
 	/**   
-	 * @Title: relieveCard   
-	 * @Description: 解除挂失   
+	 * @Title: Mdolose   
+	 * @Description: 卡冻结  
 	 * @param:       
 	 * @return: void      
 	 * @throws   
 	 */
-	private void relieveCard(Client c) {
-		
-		int cid ;
-		while(true){
-			cid= ui.getInt("请输入您的卡号:");
-			if(c.getCard().getCaid()==cid){
-				break;
+	private void Mdolose() {
+		int cid = ui.getInt("请输入要冻结的卡号:");
+		Card c = tBiz.selectBycid(cid);
+		String type;
+		if(c!=null){
+			if(c.getCatype().equals("1")){
+				type="vip";
+			}else if(c.getCatype().equals("2")){
+				type="超级vip";
 			}else{
+				type="普通";
+			}
+			System.out.println("您要冻结的卡信息如下:");
+			System.out.println("卡号\t卡类型");
+			System.out.println(c.getCaid()+"\t"+type);
+			String s = ui.getString("是否要冻结(y\n):");
+			if("y".equals(s)){
+				tBiz.dolost(cid);
+				System.out.println("冻结成功");
+			}else{
+				System.out.println("冻结取消");
+			}
+		}else{
+			System.out.println("卡号输入错误");
+		}
+	
+		
+	}
+
+
+	/**
+	 * @Title: relieveCard
+	 * @Description: 解除挂失
+	 * @param:
+	 * @return: void
+	 * @throws
+	 */
+	private void relieveCard(Client c) {
+
+		int cid;
+		while (true) {
+			cid = ui.getInt("请输入您的卡号:");
+			if (c.getCard().getCaid() == cid) {
+				break;
+			} else {
 				System.out.println("您输入的不正确");
 			}
 		}
@@ -626,7 +1016,7 @@ public class xcControl {
 	 */
 	private Card buildcard(Client c) {
 		int cid;
-		//System.out.println(c.getCard().getCaid());
+		// System.out.println(c.getCard().getCaid());
 		while (true) {
 			cid = ui.getInt("请输入您的卡号:");
 			if (cid == c.getCard().getCaid()) {
@@ -645,17 +1035,30 @@ public class xcControl {
 		return card;
 
 	}
+
+	/**
+	 * @Title: selectBa
+	 * @Description: 查询余额
+	 * @param: @param c
+	 * @return: void
+	 * @throws
+	 */
+	private void selectBa(Client c) {
+		Card card = tBiz.selectBycid(c.getCard().getCaid());
+		System.out.println("您的卡上余额为" + card.getCabalance());
+
+	}
 	
 	/**   
-	 * @Title: selectBa   
-	 * @Description: 查询余额  
+	 * @Title: selectInt   
+	 * @Description: 查询卡积分  
 	 * @param: @param c      
 	 * @return: void      
 	 * @throws   
 	 */
-	private void selectBa(Client c) {
-		Card card = tBiz.selectBycid(c.getCard().getCaid());
-		System.out.println("您的卡上余额为"+card.getCabalance());
+	private void selectInt(Client c) {
+		double in = tBiz.selectInt(c.getCard().getCaid());
+		System.out.println("您的卡上积分为"+in);
 		
 	}
 
@@ -714,14 +1117,68 @@ public class xcControl {
 
 	}
 
+	/**   
+	 * @Title: exportSales   
+	 * @Description: 导出excel表  
+	 * @param:       
+	 * @return: void      
+	 * @throws   
+	 */
 	private void exportSales() {
-		boolean flag = tBiz.exportSales();
-		if (flag) {
-			System.out.println("导出成功");
+//		String epath = ui.getString("请输入导出位置:");
+		String s = tBiz.exportSales();
+		if (s!=null) {
+			System.out.println("导出成功,导出位置为"+s);
 		} else {
 			System.out.println("导出失败");
 		}
 
+	}
+	
+	/**   
+	 * @Title: findTall   
+	 * @Description: 查看月销售量排行   
+	 * @param:       
+	 * @return: void      
+	 * @throws   
+	 */
+	private void findTall() {
+		Date d=new Date();
+		int month=(d.getMonth()+1);
+		
+		Map<String, Integer> map =tBiz.salesTall();
+		List<Map.Entry<String, Integer>> list = new ArrayList<Map.Entry<String, Integer>>(map.entrySet());
+		Collections.sort(list, new Comparator<Map.Entry<String, Integer>>() {
+			public int compare(Map.Entry<String, Integer> o1,
+			Map.Entry<String, Integer> o2) {
+			return ( o2.getValue()-o1.getValue());
+			}
+			});
+		System.out.println(month+"月份销售量排行如下:");
+		System.out.println("菜名\t月销售量(份)");
+		for (int i = 0; i < list.size(); i++) {
+			Entry<String,Integer> ent=list.get(i);
+			System.out.println(ent.getKey()+"\t"+ent.getValue());
+		}
+		
+	}
+	
+	/**   
+	 * @Title: delectSales   
+	 * @Description: 清空上月销售表  
+	 * @param:       
+	 * @return: void      
+	 * @throws   
+	 */
+	public void delectSales(){
+		
+		boolean flag = tBiz.deleteSale();
+		if(flag){
+			System.out.println("清空成功");
+		}else{
+			System.out.println("清空失败");
+		}
+		
 	}
 
 }

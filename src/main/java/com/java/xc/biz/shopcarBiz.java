@@ -23,4 +23,7 @@ public interface shopcarBiz {
 	
 	//导出excel表
 	public boolean exportSales();
+	
+	//查询本月销量排行
+	public Map<String,Integer> salesTall();
 }
