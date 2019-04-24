@@ -23,9 +23,11 @@ import com.java.xc.domain.Card;
 import com.java.xc.domain.Client;
 import com.java.xc.domain.Manager;
 import com.java.xc.domain.Menu;
+import com.java.xc.domain.Sales;
 import com.java.xc.domain.ShopCar;
 import com.java.xc.domain.Staff;
 import com.java.xc.util.Email;
+import com.java.xc.util.ExportSales;
 import com.java.xc.util.UserInput;
 import com.java.xc.view.xcView;
 
@@ -37,6 +39,7 @@ public class xcControl {
 	private xcView view;
 	private UserInput ui;
 	private Email e;
+	private ExportSales es;
 	private Socket client;
 	public static final String IP = "10.10.49.78";
 	public static final int port = 99;
@@ -47,6 +50,7 @@ public class xcControl {
 		view = new xcView();
 		ui = new UserInput();
 		e = new Email();
+		es=new ExportSales();
 		tBiz = ProxyClient.getClient(totalBiz.class, IP, port);
 	}
 
@@ -1125,8 +1129,9 @@ public class xcControl {
 	 * @throws   
 	 */
 	private void exportSales() {
-//		String epath = ui.getString("请输入导出位置:");
-		String s = tBiz.exportSales();
+		String epath = ui.getString("请输入导出位置:");
+		List<Sales> list = tBiz.exportSales();
+		String s = es.exportSales(epath, list);
 		if (s!=null) {
 			System.out.println("导出成功,导出位置为"+s);
 		} else {

@@ -7,6 +7,7 @@ import com.java.xc.domain.Card;
 import com.java.xc.domain.Client;
 import com.java.xc.domain.Manager;
 import com.java.xc.domain.Menu;
+import com.java.xc.domain.Sales;
 import com.java.xc.domain.ShopCar;
 import com.java.xc.domain.Staff;
 
@@ -102,7 +103,7 @@ public interface totalBiz {
 	public int selectIDSalT();
 
 	// 导出月销售单
-	public String exportSales();
+	public List<Sales> exportSales();
 
 	// --------------菜单---------------------------
 	// 添加菜品
