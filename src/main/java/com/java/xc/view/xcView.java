@@ -51,7 +51,8 @@ public class xcView {
         	System.out.println("          6.清空月销售单");
         	System.out.println("          7.添加员工");
         	System.out.println("          8.删除员工");
-        	System.out.println("          9.退出登录");
+        	System.out.println("          9.发放福利");
+        	System.out.println("          10.退出登录");
         }
         
         public void cardAC(){  //本店充值活动
